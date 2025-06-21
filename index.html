@@ -1,0 +1,201 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DROFTco - Стационарные и мобильные бытовки</title>
+    <meta name="description" content="DROFTco - объединяем производителей бытовок по всей России. Стационарные и мобильные бытовки для офисов, жилья, складов и кухонь.">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <span class="navbar-brand">DROFTco</span>
+        <ul class="navbar-nav" id="navbarNav">
+            <li><a href="#" onclick="showPage('home')">Главная</a></li>
+            <li><a href="#" onclick="showPage('delivery')">Условия доставки</a></li>
+            <li><a href="#" onclick="showPage('feedback')">Обратная связь</a></li>
+        </ul>
+        <div class="burger-menu" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <div id="home" class="page">
+        <section class="hero">
+            <h1>Добро пожаловать в DROFTco</h1>
+            <p>Объединяем лучших производителей бытовок по всей России.<br>Стационарные и мобильные решения для любых задач:<br>от жилья до промышленных объектов.</p>
+        </section>
+
+        <section class="categories">
+            <div class="dropdown">
+                <button class="category-button" id="stationaryBtn">СТАЦИОНАРНЫЕ</button>
+                <div class="dropdown-content" id="stationaryMenu">
+                    <a href="#" onclick="showProductPage('stationary', 'residential')"><i class="fas fa-home"></i> Жилые</a>
+                    <a href="#" onclick="showProductPage('stationary', 'warehouse')"><i class="fas fa-warehouse"></i> Склады</a>
+                    <a href="#" onclick="showProductPage('stationary', 'kitchen')"><i class="fas fa-utensils"></i> Кухни</a>
+                    <a href="#" onclick="showProductPage('stationary', 'office')"><i class="fas fa-briefcase"></i> Офисы</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="category-button" id="mobileBtn">МОБИЛЬНЫЕ</button>
+                <div class="dropdown-content" id="mobileMenu">
+                    <a href="#" onclick="showProductPage('mobile', 'residential')"><i class="fas fa-home"></i> Жилые</a>
+                    <a href="#" onclick="showProductPage('mobile', 'warehouse')"><i class="fas fa-warehouse"></i> Склады</a>
+                    <a href="#" onclick="showProductPage('mobile', 'kitchen')"><i class="fas fa-utensils"></i> Кухни</a>
+                    <a href="#" onclick="showProductPage('mobile', 'office')"><i class="fas fa-briefcase"></i> Офисы</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="info-section">
+            <h2>Почему выбирают DROFTco?</h2>
+            <p>Мы объединяем Проверенных Производителей из разных регионов России.<br>
+            Предоставляем широкий выбор качественных бытовок по конкурентным ценам<br>
+            и помогаем с логистикой.</p>
+        </section>
+    </div>
+
+    <div id="delivery" class="page" style="display: none">
+        <section class="info-section">
+            <h2>Условия доставки</h2>
+            <div class="delivery-options">
+                <div class="delivery-button" onclick="showDeliveryInfo('local')">
+                    <h3>По городу производителя</h3>
+                    <p>Быстрая и экономичная доставка в пределах города</p>
+                </div>
+                <div class="delivery-button" onclick="showDeliveryInfo('russia')">
+                    <h3>По России</h3>
+                    <p>Организуем доставку в любой регион России</p>
+                </div>
+            </div>
+            <div class="delivery-prompt-container" id="deliveryPromptContainer">
+                <span class="arrow-up"></span>
+                <p id="deliveryPrompt" class="delivery-prompt">Выберите для подробностей...</p>
+                <span class="arrow-up"></span>
+            </div>
+            <div id="deliveryDetails" class="delivery-details" style="display: none">
+                <div id="localDelivery" class="delivery-info">
+                    <h4>Доставка по городу производителя</h4>
+                    <p>• Сроки: 1-3 рабочих дня</p>
+                    <p>• Стоимость: от 5 000 до 15 000 рублей</p>
+                    <p>• Включает разгрузку и установку</p>
+                </div>
+                <div id="russiaDelivery" class="delivery-info">
+                    <h4>Доставка по России</h4>
+                    <p>• Сроки: 5-14 рабочих дней</p>
+                    <p>• Стоимость: рассчитывается индивидуально</p>
+                    <p>• Страхование груза включено</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="feedback" class="page" style="display: none">
+        <section class="info-section">
+            <h2>Обратная связь</h2>
+            <div class="contact-info">
+                <p><i class="fas fa-envelope"></i> info@droftco.ru</p>
+                <p><i class="fas fa-map-marker-alt"></i> Россия, работаем по всей стране</p>
+            </div>
+            <div class="social-buttons">
+                <a href="https://t.me/DROFTco" target="_blank" class="social-button telegram">
+                    <i class="fab fa-telegram-plane"></i> Telegram
+                </a>
+                <a href="https://vk.com/droftco" target="_blank" class="social-button vk">
+                    <i class="fab fa-vk"></i> ВКонтакте
+                </a>
+            </div>
+        </section>
+        <section class="partner-section">
+            <h2>Стать Партнёром</h2>
+            <p>Присоединяйтесь к DROFTco и станьте частью Нашей Сети!<br>
+            Доступ к клиентам, помощь с логистикой и выгодные условия сотрудничества ждут Вас.</p>
+            <div class="partner-form-container">
+                <button class="partner-button" onclick="togglePartnerForm()">Хочу Стать Партнёром</button>
+                <form class="partner-form" id="partnerForm" action="https://formspree.io/f/xovwnbdr" method="POST">
+                    <input type="text" id="partnerCity" name="city" placeholder="Ваш город" required autocomplete="off">
+                    <input type="text" id="partnerAddress" name="address" placeholder="Адрес производства" required autocomplete="off">
+                    <input type="text" id="partnerContacts" name="contacts" placeholder="Ваши контакты" required autocomplete="off">
+                    <button type="submit" id="submitPartnerForm" class="submit-button" disabled>Отправить Заявку</button>
+                    <p id="partnerFormStatus" style="display:none;"></p>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <div id="productTemplate" class="page" style="display: none">
+        <section class="info-section product-section">
+            <div class="product-container">
+                <div class="carousel-container">
+                    <div id="carousel" class="carousel">
+                        <img id="carouselImg" src="https://via.placeholder.com/600x400/ddd/333?text=Бытовка+1" alt="Бытовка" class="carousel-img">
+                    </div>
+                    <div class="carousel-dots">
+                        <div class="carousel-dot active" onclick="setCarouselImage(0)"></div>
+                        <div class="carousel-dot" onclick="setCarouselImage(1)"></div>
+                        <div class="carousel-dot" onclick="setCarouselImage(2)"></div>
+                        <div class="carousel-dot" onclick="setCarouselImage(3)"></div>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h1 id="productTitle" class="product-title">Название бытовки</h1>
+                    <p id="productDescription" class="product-description">Описание продукта будет здесь.</p>
+                    <h3 class="product-subtitle">Характеристики:</h3>
+                    <ul id="productSpecs" class="product-specs">
+                        <li>Размеры: 6x3x2.5 м</li>
+                        <li>Материал: сэндвич-панели</li>
+                        <li>Утепление: минеральная вата</li>
+                    </ul>
+                    <button class="order-button">ЗАКАЗАТЬ</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
